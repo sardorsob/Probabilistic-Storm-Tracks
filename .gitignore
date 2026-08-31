@@ -42,6 +42,7 @@ Thumbs.db
 
 # Local agent planning context (never pushed)
 context/
+graphify-out/
 
 # Node / React / Tailwind (never push these)
 node_modules/
