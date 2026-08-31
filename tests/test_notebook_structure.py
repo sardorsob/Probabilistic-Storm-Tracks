@@ -36,7 +36,7 @@ def test_numbered_notebooks_are_thin_and_valid(repository_root: Path) -> None:
         assert all(not cell.outputs for cell in code_cells)
 
 
-def test_orchestration_notebook_delegates_to_canonical_runner(
+def test_orchestration_notebook_delegates_to_shared_runner(
     repository_root: Path,
 ) -> None:
     path = repository_root / "notebooks" / "00_run_all.ipynb"

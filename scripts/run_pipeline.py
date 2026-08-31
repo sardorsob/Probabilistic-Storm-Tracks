@@ -1,4 +1,4 @@
-"""Display or execute the canonical storm-track workflow."""
+"""Display or execute the configured storm-track workflow."""
 
 import argparse
 import shlex

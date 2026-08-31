@@ -1,5 +1,5 @@
-# Keeps Streamlit app awake - pings every 30 min to prevent sleep
-# See keep_alive/README.md for full deployment + keep-alive guide
+# Optional health check for the deployed Streamlit app
+# Keep the URL in sync with keep_alive/ping.py
 
 name: Keep Streamlit Awake
 

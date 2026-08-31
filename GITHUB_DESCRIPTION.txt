@@ -1,1 +1,0 @@
-Hurricane track forecasting using Kalman Filter vs Null Model baseline. Interactive Streamlit dashboard comparing model performance across 13,500+ storms from IBTrACS (1842-2025). Surprising finding: simple persistence baseline outperforms sophisticated state-space model.

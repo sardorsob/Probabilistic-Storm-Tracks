@@ -1,71 +1,121 @@
-# Hurricane Track Prediction using Kalman Filter
+# Probabilistic Storm Tracks
 
-This project implements a probabilistic state-space model for hurricane track forecasting using the Kalman filter. The implementation uses historical hurricane track data from IBTrACS (International Best Track Archive for Climate Stewardship) to train and evaluate a constant-velocity Kalman filter with adaptive process noise scaling.
+This project compares a persistence forecast with an adaptive constant-velocity Kalman filter on global tropical-cyclone tracks from IBTrACS. The Python package contains the model and evaluation logic, thin notebooks provide an exploratory interface, and Streamlit presents validated results.
 
-## Project Overview
+![Streamlit overview using the small test fixture](docs/assets/dashboard_overview.png)
 
-The Kalman filter provides a framework for sequential Bayesian inference, enabling probabilistic forecasting of hurricane tracks. The model uses a constant velocity state-space representation with position and velocity components, and incorporates feature-adaptive process noise that adjusts based on storm characteristics such as track curvature, land proximity, and motion regimes.
+The screenshot uses a two-storm fixture to show the interface. It is not a full-data result.
 
-## File Structure
+## Current status
 
-### Analysis Notebooks
+The code now uses storm-level train, validation, and test splits, matched forecast cases, and one definition of position error and RMSE. The full IBTrACS workflow was not rerun during this refactor because preparation and evaluation are expensive. Existing result tables are retained in `artifacts/historical_dashboard/`, but they do not satisfy the current split-provenance contract and are not loaded by the app.
 
-- **`eda_cleaning.ipynb`**: Exploratory data analysis and data cleaning. This notebook loads the IBTrACS dataset, performs quality assessment, validates temporal structure, and generates a processed dataset ready for feature engineering.
+See [Results and limitations](docs/results_and_limitations.md) before interpreting any tracked result.
 
-- **`features_engineering.ipynb`**: Feature engineering for Kalman filter implementation. Transforms cleaned data into a format suitable for state-space modeling, including velocity computation, coordinate conversion, and extraction of advanced features such as track curvature, motion regimes, and landfall proximity.
+## Quick start
 
-- **`Kalman_Filter.ipynb`**: Core Kalman filter implementation and evaluation. Contains the state-space model design, parameter estimation from training data, filtering and forecasting functions, and comprehensive evaluation using sliding origin methodology. Includes both baseline and adaptive-Q filter variants.
+Python 3.11 or newer is required.
 
-- **`visualizations.ipynb`**: Comprehensive visualization suite for results analysis. Generates plots for error distributions, forecast accuracy by lead time, innovation analysis, model comparisons, and example storm trajectories. All figures are saved separately in the `figures/` directory.
+```bash
+python -m pip install -e ".[app,notebooks,dev]"
+```
 
-### Data Files
+Preview every pipeline stage without reading the dataset or running a model:
 
-The `data/` directory contains:
+```bash
+python scripts/run_pipeline.py --dry-run
+```
 
-- **`ibtracs.ALL.list.v04r01.csv`**: Raw IBTrACS dataset with hurricane track data from 1842-2025
-- **`hurricane_paths_processed.pkl`**: Processed dataset ready for Kalman filter (721,960 observations, 13,450 storms)
-- **`kalman_results_*.pkl`**: Kalman filter evaluation results including sliding window forecasts, test set results, and innovation statistics
-- **`dataset_summary.json`**: Structured metadata summary of the dataset
+Run the tests and static checks:
 
-### Output Files
+```bash
+python -m pytest -q
+python -m ruff check src scripts app tests keep_alive
+```
 
-The `figures/` directory contains all generated visualizations organized by figure number and type:
-- Error distribution plots (fig8, fig9, fig12)
-- Innovation analysis plots (fig10)
-- Model comparison plots (fig11)
-- Cumulative distribution plots (fig13)
-- Example trajectory plots (fig14)
-- Spaghetti plots (fig15, fig16)
-- Ensemble fan plots (fig17)
+## Data and full workflow
 
-### Documentation
+Download the IBTrACS v04r01 all-storm CSV from [NOAA NCEI](https://www.ncei.noaa.gov/products/international-best-track-archive) and save it as `data/ibtracs.ALL.list.v04r01.csv`, or change `paths.raw_data` in `configs/pipeline.toml`.
 
-- **`README.md`**: This file - project overview and file structure
-- **`Report/`**: Project reports and methodology documentation
-- **`References/`**: Reference papers and documentation
+The full run is intentionally explicit because it can take a long time:
 
-## Key Results
+```bash
+python scripts/run_pipeline.py --execute
+```
 
-The Kalman filter achieves reasonable forecast accuracy for hurricane tracks, particularly at short lead times:
-- **6 hours**: Mean error ~12 km, RMSE ~16 km
-- **24 hours**: Mean error ~58 km, RMSE ~84 km
-- **48 hours**: Mean error ~159 km, RMSE ~217 km
-- **72 hours**: Mean error ~286 km, RMSE ~379 km
+The stages are:
 
-The adaptive-Q variant provides modest improvements at short lead times (1-2% RMSE reduction) but the advantage diminishes at longer horizons where uncertainty accumulates.
+| Stage | Reads | Writes | Typical cost |
+| --- | --- | --- | --- |
+| `prepare_data` | Raw IBTrACS CSV | `data/hurricane_paths_processed.pkl` | Long |
+| `run_models` | Processed tracks | Split-named model pickles, summaries, and metadata in `data/` | Long |
+| `build_dashboard_data` | Paired model results and processed tracks | Versioned Streamlit contract in `app/data/` | Medium |
 
-## Usage
+The default evaluation split is `test`. Change the split and model settings in `configs/pipeline.toml`; the runner passes those values to each stage.
 
-1. Run `eda_cleaning.ipynb` to load and clean the IBTrACS dataset
-2. Run `features_engineering.ipynb` to generate processed features
-3. Run `Kalman_Filter.ipynb` to train and evaluate the filter
-4. Run `visualizations.ipynb` to generate all analysis plots
+To rebuild only the app contract from existing model outputs:
 
-## Dependencies
+```bash
+python scripts/build_dashboard_data.py \
+  --persistence-results data/test_persistence_results.pkl \
+  --kalman-results data/test_kalman_results.pkl \
+  --tracks data/hurricane_paths_processed.pkl \
+  --output-dir app/data \
+  --headline-split test
+```
 
-- pandas
-- numpy
-- matplotlib
-- seaborn
-- scipy
-- scikit-learn (for some evaluation metrics)
+Then start Streamlit:
+
+```bash
+streamlit run app/app.py
+```
+
+More detail is available in [the app guide](app/README.md) and [the regeneration guide](docs/regenerate_dashboard_data.md).
+
+## Evaluation contract
+
+- Complete storms stay within one train, validation, or test split.
+- Noise covariances are estimated from training storms only.
+- Persistence and Kalman results must contain the same storm, origin, horizon, and split keys.
+- Position error is Euclidean distance in the local track coordinate system, in kilometers.
+- RMSE is the square root of the mean squared position error.
+- Improvement is persistence RMSE minus Kalman RMSE, so a positive value favors the Kalman filter.
+- Supported forecast horizons are 6, 12, 24, 48, and 72 hours.
+
+## Repository map
+
+```text
+app/                 Streamlit entry point, pages, and schema-v1 loader
+artifacts/           Historical outputs, figures, and archived notebooks
+configs/             Pipeline settings
+docs/                Architecture, methods, reports, references, and run guides
+notebooks/           Thin numbered exploration workflow
+scripts/             Preparation, evaluation, orchestration, and export commands
+src/storm_tracks/    Reusable data, feature, model, evaluation, and export logic
+tests/               Unit, integration, notebook, app, and artifact checks
+```
+
+Start with [Architecture](docs/architecture.md) when changing module boundaries. Use `notebooks/00_run_all.ipynb` to inspect or launch the ordered workflow from Jupyter without duplicating its implementation.
+
+## Historical result snapshot
+
+The preserved pre-refactor summary reports lower persistence RMSE at every horizon:
+
+| Horizon | Kalman RMSE (km) | Persistence RMSE (km) |
+| ---: | ---: | ---: |
+| 6 h | 21.66 | 17.84 |
+| 12 h | 45.36 | 39.26 |
+| 24 h | 103.50 | 94.95 |
+| 48 h | 252.78 | 241.90 |
+| 72 h | 440.59 | 427.91 |
+
+These numbers are descriptive historical artifacts, not corrected held-out results: the tracked rows do not record train, validation, or test membership. Do not use them to make current performance claims.
+
+## Reports and references
+
+- [Technical report](docs/reports/sequential_bayesian_inference_applied_to_hurricane_tracking.pdf)
+- [Results and limitations](docs/results_and_limitations.md)
+- [Notebook guide](notebooks/README.md)
+- [IBTrACS construction paper](docs/references/kruk_2010_ibtracs_global_best_track_construction.pdf)
+
+The project is released under the [MIT License](LICENSE).
