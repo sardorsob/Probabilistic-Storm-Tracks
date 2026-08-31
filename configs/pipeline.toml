@@ -1,0 +1,22 @@
+[paths]
+raw_data = "data/ibtracs.ALL.list.v04r01.csv"
+processed_data = "data/hurricane_paths_processed.pkl"
+results_dir = "data"
+
+[preparation]
+min_observations = 2
+
+[splits]
+seed = 42
+train_fraction = 0.8
+validation_fraction = 0.1
+evaluation = "test"
+
+[forecast]
+lead_times_hours = [6, 12, 24, 48, 72]
+min_origin_index = 5
+max_origins_per_storm = 5
+
+[model]
+covariance_min_storm_length = 5
+covariance_sample_size = 500

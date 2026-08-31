@@ -41,6 +41,20 @@ def test_load_ibtracs_normalizes_columns_and_types(tmp_path: Path) -> None:
     assert pd.isna(frame.loc[1, "storm_dir"])
 
 
+def test_load_ibtracs_preserves_north_atlantic_basin_code(tmp_path: Path) -> None:
+    csv_path = tmp_path / "ibtracs.csv"
+    csv_path.write_text(
+        "SID,ISO_TIME,BASIN\n"
+        " , , \n"
+        "A,2020-01-01 00:00:00,NA\n",
+        encoding="utf-8",
+    )
+
+    frame = load_ibtracs(csv_path)
+
+    assert frame.loc[0, "basin"] == "NA"
+
+
 def test_prepare_tracks_filters_short_storms_and_sorts_observations() -> None:
     frame = pd.DataFrame(
         {

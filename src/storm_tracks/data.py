@@ -24,9 +24,14 @@ class StormSplit:
 
 def load_ibtracs(path: str | Path) -> pd.DataFrame:
     """Load the two-header IBTrACS CSV and normalize core columns."""
-    frame = pd.read_csv(Path(path), skiprows=[1], low_memory=False)
+    frame = pd.read_csv(
+        Path(path),
+        skiprows=[1],
+        low_memory=False,
+        keep_default_na=False,
+    )
     frame.columns = frame.columns.str.lower()
-    frame = frame.replace(" ", np.nan)
+    frame = frame.replace(r"^\s*$", np.nan, regex=True)
 
     for column, dtype in NUMERIC_COLUMNS.items():
         if column in frame:

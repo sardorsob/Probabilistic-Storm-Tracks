@@ -3,6 +3,7 @@
 *.csv
 *.pkl
 dataset_summary.json
+data/*.json
 
 # Exception: Allow CSV files in streamboard/data/ for dashboard deployment
 !streamboard/data/*.csv
@@ -50,4 +51,3 @@ dashboard/.env
 dashboard/.env.local
 dashboard/npm-debug.log*
 dashboard/.cache/
-
