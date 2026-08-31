@@ -1,0 +1,165 @@
+{
+  "error_distributions.csv": {
+    "columns": [
+      "sid",
+      "origin_idx",
+      "lead_time_hours",
+      "error_km",
+      "dataset",
+      "model",
+      "basin",
+      "nature",
+      "error_squared",
+      "error_category"
+    ],
+    "dtypes": {
+      "sid": "object",
+      "origin_idx": "int64",
+      "lead_time_hours": "int64",
+      "error_km": "float64",
+      "dataset": "object",
+      "model": "object",
+      "basin": "object",
+      "nature": "object",
+      "error_squared": "float64",
+      "error_category": "object"
+    },
+    "rows": 249640
+  },
+  "model_comparison_detailed.csv": {
+    "columns": [
+      "sid",
+      "origin_idx",
+      "lead_time_hours",
+      "kf_error_km",
+      "null_error_km",
+      "error_difference",
+      "null_better",
+      "improvement_km"
+    ],
+    "dtypes": {
+      "sid": "object",
+      "origin_idx": "int64",
+      "lead_time_hours": "int64",
+      "kf_error_km": "float64",
+      "null_error_km": "float64",
+      "error_difference": "float64",
+      "null_better": "bool",
+      "improvement_km": "float64"
+    },
+    "rows": 124820
+  },
+  "model_comparison_summary.csv": {
+    "columns": [
+      "lead_time_hours",
+      "kf_mean_error",
+      "kf_median_error",
+      "kf_rmse",
+      "kf_std_error",
+      "kf_count",
+      "null_mean_error",
+      "null_median_error",
+      "null_rmse",
+      "null_std_error",
+      "null_count",
+      "rmse_improvement_pct",
+      "null_better"
+    ],
+    "dtypes": {
+      "lead_time_hours": "int64",
+      "kf_mean_error": "float64",
+      "kf_median_error": "float64",
+      "kf_rmse": "float64",
+      "kf_std_error": "float64",
+      "kf_count": "int64",
+      "null_mean_error": "float64",
+      "null_median_error": "float64",
+      "null_rmse": "float64",
+      "null_std_error": "float64",
+      "null_count": "int64",
+      "rmse_improvement_pct": "float64",
+      "null_better": "bool"
+    },
+    "rows": 5
+  },
+  "storm_metadata.csv": {
+    "columns": [
+      "sid",
+      "start_time",
+      "end_time",
+      "observation_count",
+      "lat_first",
+      "lat_min",
+      "lat_max",
+      "lon_first",
+      "lon_min",
+      "lon_max",
+      "basin",
+      "nature",
+      "storm_speed_mean",
+      "storm_dir_mean",
+      "season",
+      "duration_days",
+      "basin_name",
+      "storm_type"
+    ],
+    "dtypes": {
+      "sid": "object",
+      "start_time": "object",
+      "end_time": "object",
+      "observation_count": "int64",
+      "lat_first": "float64",
+      "lat_min": "float64",
+      "lat_max": "float64",
+      "lon_first": "float64",
+      "lon_min": "float64",
+      "lon_max": "float64",
+      "basin": "object",
+      "nature": "object",
+      "storm_speed_mean": "float64",
+      "storm_dir_mean": "float64",
+      "season": "int64",
+      "duration_days": "float64",
+      "basin_name": "object",
+      "storm_type": "object"
+    },
+    "rows": 13450
+  },
+  "storm_performance.csv": {
+    "columns": [
+      "sid",
+      "kf_mean_error",
+      "kf_std_error",
+      "kf_forecast_count",
+      "lead_time_hours",
+      "null_mean_error",
+      "null_std_error",
+      "null_forecast_count",
+      "basin",
+      "nature",
+      "start_time",
+      "end_time",
+      "lat",
+      "lon",
+      "better_model"
+    ],
+    "dtypes": {
+      "sid": "object",
+      "kf_mean_error": "float64",
+      "kf_std_error": "float64",
+      "kf_forecast_count": "int64",
+      "lead_time_hours": "int64",
+      "null_mean_error": "float64",
+      "null_std_error": "float64",
+      "null_forecast_count": "int64",
+      "basin": "object",
+      "nature": "object",
+      "start_time": "object",
+      "end_time": "object",
+      "lat": "float64",
+      "lon": "float64",
+      "better_model": "object"
+    },
+    "rows": 4297
+  }
+}

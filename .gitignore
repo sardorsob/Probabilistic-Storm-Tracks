@@ -39,6 +39,9 @@ Thumbs.db
 *.tmp
 *.log
 
+# Local agent planning context (never pushed)
+context/
+
 # Node / React / Tailwind (never push these)
 node_modules/
 dashboard/node_modules/
