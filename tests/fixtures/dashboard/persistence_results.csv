@@ -1,0 +1,11 @@
+split,storm_id,origin_idx,lead_time_hours,error_km
+test,A,0,6,3.0
+test,A,1,6,4.0
+test,A,0,12,6.0
+test,A,1,12,8.0
+test,B,0,6,6.0
+test,B,1,6,8.0
+test,B,0,12,12.0
+test,B,1,12,16.0
+validation,C,0,6,10.0
+validation,C,0,12,20.0

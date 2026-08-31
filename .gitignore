@@ -7,6 +7,7 @@ data/*.json
 
 # Exception: Allow CSV files in streamboard/data/ for dashboard deployment
 !streamboard/data/*.csv
+!tests/fixtures/dashboard/*.csv
 
 # Python
 __pycache__/
