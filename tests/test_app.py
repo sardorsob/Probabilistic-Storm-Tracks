@@ -215,6 +215,17 @@ def test_app_uses_native_navigation_and_supported_width_api(repository_root: Pat
     assert 'width="stretch"' in source
 
 
+def test_methodology_report_link_targets_the_tracked_report(repository_root: Path) -> None:
+    from app.pages.methodology import REPORT_URL
+
+    report_path = Path(
+        "docs/reports/sequential_bayesian_inference_applied_to_hurricane_tracking.pdf"
+    )
+
+    assert (repository_root / report_path).is_file()
+    assert REPORT_URL.endswith(report_path.as_posix())
+
+
 def test_app_shows_clear_message_when_dashboard_data_is_missing(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

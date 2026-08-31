@@ -48,17 +48,10 @@ def build_stages(config: Mapping[str, object]) -> tuple[Stage, ...]:
     raw_data = str(_value(paths, "raw_data"))
     processed_data = str(_value(paths, "processed_data"))
     results_dir = str(_value(paths, "results_dir"))
+    dashboard_data_dir = str(_value(paths, "dashboard_data_dir"))
     split = str(_value(splits, "evaluation"))
-    kalman_result = (
-        f"{results_dir}/sliding_results_final.pkl"
-        if split == "test"
-        else f"{results_dir}/val_sliding_results_final.pkl"
-    )
-    persistence_result = (
-        f"{results_dir}/null_model_test_results.pkl"
-        if split == "test"
-        else f"{results_dir}/null_model_val_results.pkl"
-    )
+    kalman_result = f"{results_dir}/{split}_kalman_results.pkl"
+    persistence_result = f"{results_dir}/{split}_persistence_results.pkl"
     lead_times = tuple(str(value) for value in _value(forecast, "lead_times_hours"))
     model_command = (
         sys.executable,
@@ -85,7 +78,6 @@ def build_stages(config: Mapping[str, object]) -> tuple[Stage, ...]:
         str(_value(model, "covariance_min_storm_length")),
         "--covariance-sample-size",
         str(_value(model, "covariance_sample_size")),
-        "--legacy-compatible-names",
     )
     return (
         Stage(
@@ -113,16 +105,31 @@ def build_stages(config: Mapping[str, object]) -> tuple[Stage, ...]:
         ),
         Stage(
             name="build_dashboard_data",
-            command=(sys.executable, "streamboard/preprocess_steamboard.py"),
+            command=(
+                sys.executable,
+                "scripts/build_dashboard_data.py",
+                "--persistence-results",
+                persistence_result,
+                "--kalman-results",
+                kalman_result,
+                "--tracks",
+                processed_data,
+                "--output-dir",
+                dashboard_data_dir,
+                "--headline-split",
+                split,
+            ),
             required_inputs=(processed_data, kalman_result, persistence_result),
             expected_outputs=(
-                "streamboard/model_comparison_summary.csv",
-                "streamboard/error_distributions.csv",
-                "streamboard/storm_performance.csv",
-                "streamboard/model_comparison_detailed.csv",
-                "streamboard/storm_metadata.csv",
+                f"{dashboard_data_dir}/model_comparison_summary.csv",
+                f"{dashboard_data_dir}/error_distributions.csv",
+                f"{dashboard_data_dir}/storm_performance.csv",
+                f"{dashboard_data_dir}/model_comparison_detailed.csv",
+                f"{dashboard_data_dir}/storm_metadata.csv",
+                f"{dashboard_data_dir}/storm_tracks.csv.gz",
+                f"{dashboard_data_dir}/dashboard_manifest.json",
             ),
-            runtime="medium: legacy bridge until the Task 6 schema rebuild",
+            runtime="medium: validates and exports the Streamlit data contract",
         ),
     )
 

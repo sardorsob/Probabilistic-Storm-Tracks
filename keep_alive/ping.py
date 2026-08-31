@@ -2,8 +2,8 @@
 Keep Streamlit app awake by pinging its URL.
 Run manually or on a schedule (Task Scheduler, cron).
 """
-import urllib.request
 import sys
+import urllib.request
 
 URL = "https://hurricanepaths.streamlit.app/"
 

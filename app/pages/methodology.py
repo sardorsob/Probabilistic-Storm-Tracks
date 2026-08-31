@@ -3,8 +3,8 @@ import streamlit as st
 from app.data_loader import DashboardBundle
 
 REPORT_URL = (
-    "https://github.com/sardorsob/Probabilistic-Storm-Tracks/blob/main/Report/"
-    "Sequential_Bayesian_Inference_Applied_to_Hurricane_Tracking.pdf"
+    "https://github.com/sardorsob/Probabilistic-Storm-Tracks/blob/main/docs/reports/"
+    "sequential_bayesian_inference_applied_to_hurricane_tracking.pdf"
 )
 
 

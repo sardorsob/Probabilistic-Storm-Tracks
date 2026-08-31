@@ -2,6 +2,7 @@
 raw_data = "data/ibtracs.ALL.list.v04r01.csv"
 processed_data = "data/hurricane_paths_processed.pkl"
 results_dir = "data"
+dashboard_data_dir = "app/data"
 
 [preparation]
 min_observations = 2

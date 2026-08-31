@@ -30,6 +30,11 @@ def test_pipeline_dry_run_lists_stages_without_execution(
     assert "EXECUTING" not in result.stdout
     assert "required inputs" in result.stdout.lower()
     assert "expected outputs" in result.stdout.lower()
+    assert "scripts/build_dashboard_data.py" in result.stdout
+    assert "data/test_persistence_results.pkl" in result.stdout
+    assert "data/test_kalman_results.pkl" in result.stdout
+    assert "--output-dir app/data" in result.stdout
+    assert "streamboard" not in result.stdout
 
 
 def test_prepare_data_runs_on_a_small_ibtracs_file(tmp_path: Path) -> None:

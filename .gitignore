@@ -5,8 +5,11 @@
 dataset_summary.json
 data/*.json
 
-# Exception: Allow CSV files in streamboard/data/ for dashboard deployment
-!streamboard/data/*.csv
+# Tracked contracts and historical outputs
+!app/data/*.csv
+!app/data/*.csv.gz
+!app/data/dashboard_manifest.json
+!artifacts/historical_dashboard/*.csv
 !tests/fixtures/dashboard/*.csv
 
 # Python
@@ -46,11 +49,5 @@ context/
 graphify-out/
 .worktrees/
 
-# Node / React / Tailwind (never push these)
+# Node build files
 node_modules/
-dashboard/node_modules/
-dashboard/dist/
-dashboard/.env
-dashboard/.env.local
-dashboard/npm-debug.log*
-dashboard/.cache/

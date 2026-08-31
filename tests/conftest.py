@@ -10,7 +10,7 @@ def repository_root() -> Path:
 
 
 @pytest.fixture
-def legacy_contract(repository_root: Path) -> dict[str, dict[str, object]]:
-    contract_path = repository_root / "tests" / "fixtures" / "legacy_dashboard_contract.json"
+def historical_contract(repository_root: Path) -> dict[str, dict[str, object]]:
+    contract_path = repository_root / "tests" / "fixtures" / "historical_dashboard_contract.json"
     with contract_path.open(encoding="utf-8") as contract_file:
         return json.load(contract_file)

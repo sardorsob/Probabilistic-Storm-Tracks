@@ -17,24 +17,10 @@ from storm_tracks.evaluation import (
 from storm_tracks.models import HurricaneKalmanFilter, estimate_noise_covariances
 
 
-def _output_paths(output_dir: Path, split: str, legacy_names: bool) -> dict[str, Path]:
-    if legacy_names:
-        kalman_name = (
-            "sliding_results_final.pkl"
-            if split == "test"
-            else "val_sliding_results_final.pkl"
-        )
-        persistence_name = (
-            "null_model_test_results.pkl"
-            if split == "test"
-            else "null_model_val_results.pkl"
-        )
-    else:
-        kalman_name = f"{split}_kalman_results.pkl"
-        persistence_name = f"{split}_persistence_results.pkl"
+def _output_paths(output_dir: Path, split: str) -> dict[str, Path]:
     return {
-        "kalman_results": output_dir / kalman_name,
-        "persistence_results": output_dir / persistence_name,
+        "kalman_results": output_dir / f"{split}_kalman_results.pkl",
+        "persistence_results": output_dir / f"{split}_persistence_results.pkl",
         "kalman_summary": output_dir / f"{split}_kalman_summary.csv",
         "persistence_summary": output_dir / f"{split}_persistence_summary.csv",
         "metadata": output_dir / f"{split}_results_metadata.json",
@@ -54,7 +40,6 @@ def run_models(
     max_origins_per_storm: int = 5,
     covariance_min_storm_length: int = 5,
     covariance_sample_size: int | None = None,
-    legacy_names: bool = False,
 ) -> dict[str, Path]:
     """Fit on training storms and evaluate one explicitly named split."""
     if split not in {"validation", "test"}:
@@ -107,7 +92,7 @@ def run_models(
 
     destination = Path(output_dir)
     destination.mkdir(parents=True, exist_ok=True)
-    outputs = _output_paths(destination, split, legacy_names)
+    outputs = _output_paths(destination, split)
     persistence.to_pickle(outputs["persistence_results"])
     kalman.to_pickle(outputs["kalman_results"])
     summarize_lead_time_errors(persistence, split=split).reset_index().to_csv(
@@ -147,7 +132,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-origins", type=int, default=5)
     parser.add_argument("--covariance-min-storm-length", type=int, default=5)
     parser.add_argument("--covariance-sample-size", type=int)
-    parser.add_argument("--legacy-compatible-names", action="store_true")
     return parser
 
 
@@ -165,7 +149,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         max_origins_per_storm=args.max_origins,
         covariance_min_storm_length=args.covariance_min_storm_length,
         covariance_sample_size=args.covariance_sample_size,
-        legacy_names=args.legacy_compatible_names,
     )
     for name, path in outputs.items():
         print(f"{name}: {path}")
