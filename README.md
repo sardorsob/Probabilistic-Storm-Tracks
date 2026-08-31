@@ -70,7 +70,7 @@ Then start Streamlit:
 streamlit run app/app.py
 ```
 
-More detail is available in [the app guide](app/README.md) and [the regeneration guide](docs/regenerate_dashboard_data.md).
+More detail is available in [the app guide](app/README.md).
 
 ## Evaluation contract
 
@@ -86,7 +86,7 @@ More detail is available in [the app guide](app/README.md) and [the regeneration
 
 ```text
 app/                 Streamlit entry point, pages, and schema-v1 loader
-artifacts/           Historical outputs, figures, and archived notebooks
+artifacts/           Historical dashboard tables and figures
 configs/             Pipeline settings
 docs/                Architecture, methods, reports, references, and run guides
 notebooks/           Thin numbered exploration workflow

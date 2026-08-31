@@ -42,4 +42,4 @@ The app intentionally does not load `artifacts/historical_dashboard/`. Those tab
 
 `app/data_loader.py` checks the manifest schema, declared file list, row counts, required columns, and UTC timestamps before rendering a page. If the contract is missing or invalid, the app shows a build instruction instead of partial results.
 
-See [the regeneration guide](../docs/regenerate_dashboard_data.md) for the complete contract and [the deployment guide](../keep_alive/README.md) for Streamlit Community Cloud settings.
+See [the deployment guide](../keep_alive/README.md) for Streamlit Community Cloud settings.

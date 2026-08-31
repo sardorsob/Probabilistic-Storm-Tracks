@@ -43,7 +43,6 @@ Model or metric behavior belongs in `src/storm_tracks/`. Scripts should translat
 | `app/data/` | Current generated Streamlit contract | Generated; may be tracked for deployment |
 | `artifacts/historical_dashboard/` | Preserved pre-refactor tables with incomplete provenance | Tracked, historical only |
 | `artifacts/figures/` | Preserved analysis figures | Tracked |
-| `artifacts/notebooks/legacy/` | Output-heavy notebooks kept for reference | Tracked, not runnable workflow |
 | `docs/reports/` | Reports and report source | Tracked |
 | `docs/references/` | Local reference papers | Tracked |
 

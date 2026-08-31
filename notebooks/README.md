@@ -1,6 +1,6 @@
 # Notebook guide
 
-The notebooks are a readable layer over the Python package. They keep configuration and exploration visible without maintaining a second copy of the model code.
+The six numbered notebooks are the supported Jupyter workflow. They are a readable layer over the Python package and do not maintain a second copy of the model code.
 
 Install the project before opening Jupyter:
 
@@ -19,10 +19,6 @@ python -m pip install -e ".[notebooks,dev]"
 5. `05_evaluation_and_visualization.ipynb` compares split-aware results.
 
 The full IBTrACS preparation and forecast evaluation can take a long time. The notebooks were checked for structure and Python conversion during the refactor, but they were not executed on the complete dataset.
-
-## Historical notebooks
-
-The original output-heavy notebooks are in `artifacts/notebooks/legacy/`. They preserve earlier analysis output but predate the current split and metric rules. Use the numbered notebooks for new work.
 
 ## Static verification
 
