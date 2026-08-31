@@ -5,6 +5,19 @@ import pandas as pd
 
 from storm_tracks.models import HurricaneKalmanFilter, kalman_forecast, persistence_forecast
 
+HISTORICAL_RESULTS_WARNING = (
+    "Tracked legacy result CSVs were not regenerated with the corrected scientific semantics."
+)
+
+
+def results_metadata(*, split: str) -> dict[str, str]:
+    """Describe the provenance and metric contract for newly generated results."""
+    return {
+        "split": split,
+        "metric": "rmse",
+        "historical_results_warning": HISTORICAL_RESULTS_WARNING,
+    }
+
 
 def forecast_distances(forecasts: np.ndarray, observations: np.ndarray) -> np.ndarray:
     """Return Euclidean position errors in kilometers."""
@@ -17,19 +30,49 @@ def forecast_distances(forecasts: np.ndarray, observations: np.ndarray) -> np.nd
     return np.linalg.norm(forecast_array - observation_array, axis=1)
 
 
-def summarize_lead_time_errors(results: pd.DataFrame) -> pd.DataFrame:
-    """Summarize forecast errors by lead time."""
-    return (
-        results.groupby("lead_time_hours")["error_km"]
+def rmse(errors: np.ndarray | pd.Series) -> float:
+    """Return root mean square error for finite values."""
+    values = np.asarray(errors, dtype=float)
+    values = values[np.isfinite(values)]
+    if values.size == 0:
+        raise ValueError("RMSE requires at least one finite error")
+    return float(np.sqrt(np.mean(values**2)))
+
+
+def relative_rmse_improvement(
+    *,
+    baseline_errors: np.ndarray | pd.Series,
+    candidate_errors: np.ndarray | pd.Series,
+) -> float:
+    """Return candidate RMSE improvement over baseline as a percentage."""
+    baseline_rmse = rmse(baseline_errors)
+    if baseline_rmse == 0:
+        raise ValueError("baseline RMSE must be greater than zero")
+    return (baseline_rmse - rmse(candidate_errors)) / baseline_rmse * 100
+
+
+def summarize_lead_time_errors(results: pd.DataFrame, *, split: str) -> pd.DataFrame:
+    """Summarize forecast errors for one named data split."""
+    required = {"split", "lead_time_hours", "error_km"}
+    missing = required.difference(results.columns)
+    if missing:
+        raise ValueError(f"missing required columns: {sorted(missing)}")
+    selected = results.loc[results["split"] == split]
+    if selected.empty:
+        raise ValueError(f"no forecast results found for split {split!r}")
+    summary = (
+        selected.groupby("lead_time_hours")["error_km"]
         .agg(
             mean="mean",
             median="median",
-            rmse=lambda values: np.sqrt(np.mean(values**2)),
+            rmse=rmse,
             count="count",
             std="std",
         )
         .round(2)
     )
+    summary.insert(0, "split", split)
+    return summary
 
 
 def _evaluate_sliding_origins(
@@ -37,6 +80,7 @@ def _evaluate_sliding_origins(
     storm_ids: Iterable[str],
     forecaster: Callable[[pd.DataFrame, int, int], dict[str, np.ndarray] | None],
     *,
+    split: str,
     lead_times_hours: Sequence[int],
     min_origin_index: int,
     max_origins_per_storm: int | None,
@@ -64,19 +108,24 @@ def _evaluate_sliding_origins(
                 if lead_step <= len(result["distances_km"]):
                     rows.append(
                         {
+                            "split": split,
                             "storm_id": storm_id,
                             "origin_idx": origin_index,
                             "lead_time_hours": lead_time,
                             "error_km": result["distances_km"][lead_step - 1],
                         }
                     )
-    return pd.DataFrame(rows, columns=["storm_id", "origin_idx", "lead_time_hours", "error_km"])
+    return pd.DataFrame(
+        rows,
+        columns=["split", "storm_id", "origin_idx", "lead_time_hours", "error_km"],
+    )
 
 
 def evaluate_persistence(
     frame: pd.DataFrame,
     storm_ids: Iterable[str],
     *,
+    split: str,
     lead_times_hours: Sequence[int] = (6, 12, 24, 48, 72),
     min_origin_index: int = 5,
     max_origins_per_storm: int | None = 5,
@@ -86,6 +135,7 @@ def evaluate_persistence(
         frame,
         storm_ids,
         persistence_forecast,
+        split=split,
         lead_times_hours=lead_times_hours,
         min_origin_index=min_origin_index,
         max_origins_per_storm=max_origins_per_storm,
@@ -97,6 +147,7 @@ def evaluate_kalman(
     storm_ids: Iterable[str],
     model: HurricaneKalmanFilter,
     *,
+    split: str,
     lead_times_hours: Sequence[int] = (6, 12, 24, 48, 72),
     min_origin_index: int = 5,
     max_origins_per_storm: int | None = 5,
@@ -117,6 +168,7 @@ def evaluate_kalman(
         frame,
         storm_ids,
         forecast,
+        split=split,
         lead_times_hours=lead_times_hours,
         min_origin_index=min_origin_index,
         max_origins_per_storm=max_origins_per_storm,

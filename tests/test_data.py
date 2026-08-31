@@ -3,7 +3,13 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from storm_tracks.data import load_ibtracs, prepare_tracks, split_by_storm
+from storm_tracks.data import (
+    load_ibtracs,
+    prepare_tracks,
+    split_by_storm,
+    unwrap_longitudes,
+    validate_disjoint_storm_splits,
+)
 
 
 def test_load_ibtracs_normalizes_columns_and_types(tmp_path: Path) -> None:
@@ -31,7 +37,7 @@ def test_load_ibtracs_normalizes_columns_and_types(tmp_path: Path) -> None:
     ]
     assert str(frame["storm_dir"].dtype) == "Int64"
     assert str(frame["usa_lat"].dtype) == "Float64"
-    assert pd.api.types.is_datetime64_any_dtype(frame["iso_time"])
+    assert str(frame["iso_time"].dtype) == "datetime64[ns, UTC]"
     assert pd.isna(frame.loc[1, "storm_dir"])
 
 
@@ -89,3 +95,18 @@ def test_split_by_storm_rejects_invalid_fractions() -> None:
             train_fraction=0.8,
             validation_fraction=0.2,
         )
+
+
+def test_unwrap_longitudes_uses_short_antimeridian_delta() -> None:
+    result = unwrap_longitudes(pd.Series([179.0, -179.0], name="lon"))
+
+    assert result.tolist() == pytest.approx([179.0, 181.0])
+    assert result.diff().iloc[1] == pytest.approx(2.0)
+
+
+def test_split_validation_rejects_shared_storms() -> None:
+    train = pd.DataFrame({"sid": ["A", "B"]})
+    test = pd.DataFrame({"sid": ["B", "C"]})
+
+    with pytest.raises(ValueError, match="B"):
+        validate_disjoint_storm_splits(train=train, test=test)

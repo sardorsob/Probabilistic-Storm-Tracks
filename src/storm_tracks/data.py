@@ -32,8 +32,20 @@ def load_ibtracs(path: str | Path) -> pd.DataFrame:
         if column in frame:
             frame[column] = pd.to_numeric(frame[column], errors="coerce").astype(dtype)
     if "iso_time" in frame:
-        frame["iso_time"] = pd.to_datetime(frame["iso_time"])
+        frame["iso_time"] = pd.to_datetime(frame["iso_time"], utc=True)
     return frame
+
+
+def unwrap_longitudes(longitudes: pd.Series) -> pd.Series:
+    """Return continuous longitudes while preserving missing-value gaps."""
+    values = pd.to_numeric(longitudes, errors="coerce").to_numpy(dtype=float)
+    result = values.copy()
+    valid_indexes = np.flatnonzero(np.isfinite(values))
+    if valid_indexes.size:
+        breaks = np.flatnonzero(np.diff(valid_indexes) != 1) + 1
+        for indexes in np.split(valid_indexes, breaks):
+            result[indexes] = np.degrees(np.unwrap(np.radians(values[indexes])))
+    return pd.Series(result, index=longitudes.index, name=longitudes.name)
 
 
 def prepare_tracks(frame: pd.DataFrame, min_observations: int = 2) -> pd.DataFrame:
@@ -46,11 +58,16 @@ def prepare_tracks(frame: pd.DataFrame, min_observations: int = 2) -> pd.DataFra
         raise ValueError(f"missing required columns: {sorted(missing)}")
 
     counts = frame.groupby("sid")["sid"].transform("size")
-    return (
+    result = (
         frame.loc[counts >= min_observations]
         .sort_values(["sid", "iso_time"], kind="stable")
         .reset_index(drop=True)
     )
+    if "lon" in result:
+        result["lon_unwrapped"] = result.groupby("sid", sort=False)["lon"].transform(
+            unwrap_longitudes
+        )
+    return result
 
 
 def split_by_storm(
@@ -87,3 +104,32 @@ def split_by_storm(
         validation=select(validation_ids),
         test=select(test_ids),
     )
+
+
+def validate_disjoint_storm_splits(
+    *,
+    train: pd.DataFrame,
+    test: pd.DataFrame,
+    validation: pd.DataFrame | None = None,
+    id_column: str = "sid",
+) -> None:
+    """Raise when a storm identifier appears in more than one data split."""
+    splits = {"train": train, "test": test}
+    if validation is not None:
+        splits["validation"] = validation
+    missing = [name for name, frame in splits.items() if id_column not in frame]
+    if missing:
+        raise ValueError(f"missing {id_column!r} in splits: {missing}")
+
+    identifiers = {
+        name: set(frame[id_column].dropna().unique()) for name, frame in splits.items()
+    }
+    names = list(identifiers)
+    for index, left_name in enumerate(names):
+        for right_name in names[index + 1 :]:
+            overlap = identifiers[left_name] & identifiers[right_name]
+            if overlap:
+                raise ValueError(
+                    f"storm identifiers overlap between {left_name} and {right_name}: "
+                    f"{sorted(overlap)}"
+                )

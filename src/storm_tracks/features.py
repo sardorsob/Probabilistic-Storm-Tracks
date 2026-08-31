@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 
+from storm_tracks.data import unwrap_longitudes
+
 KM_PER_DEGREE = 111.0
 KNOT_TO_KMH = 1.852
 PREFERRED_AGENCIES = {
@@ -13,6 +15,7 @@ PREFERRED_AGENCIES = {
     "SA": ("jtwc_sh",),
 }
 STORM_STAGE_CODES = {"DS": 0, "NR": 1, "SS": 1, "TS": 2, "MX": 3, "ET": 4}
+MOTION_REGIME_LABELS = {0: "westward", 1: "poleward", 2: "low_motion"}
 
 
 def compute_velocity_from_positions(
@@ -22,9 +25,7 @@ def compute_velocity_from_positions(
     ordered = storm.sort_values("iso_time", kind="stable")
     elapsed_hours = ordered["iso_time"].diff().dt.total_seconds() / 3600
     latitude_km = ordered["lat"].diff() * KM_PER_DEGREE
-    longitude_delta = ordered["lon"].diff()
-    longitude_delta = longitude_delta.where(longitude_delta <= 180, longitude_delta - 360)
-    longitude_delta = longitude_delta.where(longitude_delta >= -180, longitude_delta + 360)
+    longitude_delta = unwrap_longitudes(ordered["lon"]).diff()
     longitude_km = longitude_delta * KM_PER_DEGREE * np.cos(np.radians(ordered["lat"]))
     speed = np.hypot(latitude_km, longitude_km) / elapsed_hours.replace(0, np.nan)
     direction = np.degrees(np.arctan2(longitude_km, latitude_km)) % 360
@@ -88,12 +89,14 @@ def add_motion_features(frame: pd.DataFrame) -> pd.DataFrame:
 
     latitude_reference = grouped["lat"].transform("first")
     longitude_reference = grouped["lon"].transform("first")
+    result["lon_unwrapped"] = grouped["lon"].transform(unwrap_longitudes)
+    unwrapped_reference = result.groupby("sid", sort=False)["lon_unwrapped"].transform("first")
     result["lat_ref"] = latitude_reference
     result["lon_ref"] = longitude_reference
     result["x_km"] = (
         KM_PER_DEGREE
         * np.cos(np.radians(latitude_reference))
-        * (result["lon"] - longitude_reference)
+        * (result["lon_unwrapped"] - unwrapped_reference)
     )
     result["y_km"] = KM_PER_DEGREE * (result["lat"] - latitude_reference)
 

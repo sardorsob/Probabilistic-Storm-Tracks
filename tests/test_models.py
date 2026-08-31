@@ -4,6 +4,7 @@ import pytest
 
 from storm_tracks.models import (
     HurricaneKalmanFilter,
+    adaptive_process_noise_scale,
     estimate_noise_covariances,
     kalman_forecast,
     persistence_forecast,
@@ -56,12 +57,20 @@ def test_kalman_filter_predicts_and_updates_finite_state() -> None:
     assert np.isfinite(updated_covariance).all()
 
 
-def test_adaptive_filter_preserves_notebook_regime_two_scaling() -> None:
+def test_adaptive_filter_treats_regime_two_as_low_motion() -> None:
     model = HurricaneKalmanFilter(adaptive=True)
 
     model.adapt_parameters({"motion_regime": 2})
 
-    np.testing.assert_allclose(model.Q, model.Q_base * 1.3)
+    np.testing.assert_allclose(model.Q, model.Q_base)
+    assert adaptive_process_noise_scale(
+        motion_regime=2
+    ) == adaptive_process_noise_scale(motion_regime="low_motion")
+
+
+def test_adaptive_filter_scales_poleward_regime() -> None:
+    assert adaptive_process_noise_scale(1) == pytest.approx(1.3)
+    assert adaptive_process_noise_scale("poleward") == pytest.approx(1.3)
 
 
 def test_adaptive_filter_leaves_noise_unchanged_without_features() -> None:
@@ -88,12 +97,18 @@ def test_kalman_forecast_follows_straight_track() -> None:
 def test_estimated_covariances_are_symmetric_and_finite() -> None:
     training_tracks = pd.concat([metric_track("A"), metric_track("B")], ignore_index=True)
 
-    process_covariance, observation_covariance = estimate_noise_covariances(training_tracks)
+    process_covariance, observation_covariance = estimate_noise_covariances(
+        training_tracks,
+        sample_size=1,
+        seed=7,
+    )
 
-    assert process_covariance is not None
-    assert observation_covariance is not None
     np.testing.assert_allclose(process_covariance, process_covariance.T)
     np.testing.assert_allclose(observation_covariance, observation_covariance.T)
     assert np.isfinite(process_covariance).all()
     assert np.isfinite(observation_covariance).all()
     assert np.diag(observation_covariance).tolist() == pytest.approx([0.25, 0.25])
+
+    repeated = estimate_noise_covariances(training_tracks, sample_size=1, seed=7)
+    np.testing.assert_allclose(process_covariance, repeated[0])
+    np.testing.assert_allclose(observation_covariance, repeated[1])

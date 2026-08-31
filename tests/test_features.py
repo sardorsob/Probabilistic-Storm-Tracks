@@ -3,6 +3,7 @@ import pandas as pd
 import pytest
 
 from storm_tracks.features import (
+    MOTION_REGIME_LABELS,
     add_motion_features,
     classify_motion_regime,
     compute_velocity_from_positions,
@@ -71,6 +72,20 @@ def test_classify_motion_regime_preserves_notebook_codes() -> None:
     assert classify_motion_regime(storm_speed=10.0, storm_direction=270.0) == 0
     assert classify_motion_regime(storm_speed=10.0, storm_direction=90.0) == 1
     assert np.isnan(classify_motion_regime(storm_speed=np.nan, storm_direction=90.0))
+
+
+def test_motion_regime_code_two_is_low_motion() -> None:
+    assert MOTION_REGIME_LABELS[2] == "low_motion"
+
+
+def test_metric_coordinates_remain_continuous_across_antimeridian() -> None:
+    track = straight_track().iloc[:2].copy()
+    track["lat"] = [10.0, 10.0]
+    track["lon"] = [179.0, -179.0]
+
+    result = add_motion_features(track)
+
+    assert result.loc[1, "x_km"] == pytest.approx(218.65, abs=0.5)
 
 
 def test_select_agency_tracks_uses_authoritative_positions() -> None:

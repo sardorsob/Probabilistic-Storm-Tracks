@@ -3,6 +3,8 @@ from collections.abc import Mapping
 import numpy as np
 import pandas as pd
 
+from storm_tracks.features import MOTION_REGIME_LABELS
+
 STATE_TRANSITION = np.array(
     [
         [1.0, 0.0, 1.0, 0.0],
@@ -34,6 +36,27 @@ def _scalar(features: Mapping[str, object], key: str, default: float = 0.0) -> f
     if isinstance(value, list | np.ndarray):
         return float(value[0]) if len(value) else default
     return float(value)
+
+
+def adaptive_process_noise_scale(motion_regime: object) -> float:
+    """Return the process-noise multiplier for a named or numeric regime."""
+    value = motion_regime
+    if hasattr(value, "iloc"):
+        value = value.iloc[0] if len(value) else None
+    if isinstance(value, list | np.ndarray):
+        value = value[0] if len(value) else None
+
+    if isinstance(value, str):
+        label = value.strip().lower()
+    else:
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError):
+            return 1.0
+        if np.isnan(numeric):
+            return 1.0
+        label = MOTION_REGIME_LABELS.get(int(numeric), "")
+    return {"westward": 1.1, "poleward": 1.3, "low_motion": 1.0}.get(label, 1.0)
 
 
 class HurricaneKalmanFilter:
@@ -72,11 +95,7 @@ class HurricaneKalmanFilter:
         if "is_approaching_land" in features and _scalar(features, "is_approaching_land") == 1:
             scale *= 1.5
         if "motion_regime" in features:
-            motion_regime = _scalar(features, "motion_regime")
-            if motion_regime == 2:
-                scale *= 1.3
-            elif motion_regime == 0:
-                scale *= 1.1
+            scale *= adaptive_process_noise_scale(features["motion_regime"])
         if "latitude_regime" in features and _scalar(features, "latitude_regime") == 2:
             scale *= 1.2
         self.Q = self.Q_base * scale
@@ -245,12 +264,35 @@ def estimate_noise_covariances(
     *,
     min_storm_length: int = 5,
     sample_size: int | None = None,
-) -> tuple[np.ndarray | None, np.ndarray | None]:
-    """Estimate notebook-compatible process and observation covariance matrices."""
+    seed: int = 42,
+    observation_variance_km2: float = 0.25,
+    regularization: float = 1e-6,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Estimate seeded process residual covariance in kilometer-based state units.
+
+    Process residuals use ``[x_km, y_km, vx_km, vy_km]``. The observation
+    covariance is an explicit measurement-noise floor because one best-track
+    position series cannot identify observation error independently.
+    """
+    required = {"sid", "iso_time", "x_km", "y_km", "vx_km", "vy_km"}
+    missing = required.difference(training_tracks.columns)
+    if missing:
+        raise ValueError(f"missing required columns: {sorted(missing)}")
+    if min_storm_length < 2:
+        raise ValueError("min_storm_length must be at least 2")
+    if sample_size is not None and sample_size < 1:
+        raise ValueError("sample_size must be at least 1")
+    if observation_variance_km2 <= 0 or regularization < 0:
+        raise ValueError("covariance variances must be positive")
+
     counts = training_tracks.groupby("sid")["sid"].transform("size")
     storm_ids = training_tracks.loc[counts >= min_storm_length, "sid"].unique()
-    if sample_size is not None:
-        storm_ids = storm_ids[:sample_size]
+    if sample_size is not None and sample_size < len(storm_ids):
+        storm_ids = np.random.default_rng(seed).choice(
+            storm_ids,
+            size=sample_size,
+            replace=False,
+        )
     state_changes = []
     for storm_id in storm_ids:
         storm = (
@@ -263,7 +305,8 @@ def estimate_noise_covariances(
             previous = storm.loc[index - 1, columns].to_numpy(dtype=float, na_value=0.0)
             actual = storm.loc[index, columns].to_numpy(dtype=float, na_value=0.0)
             state_changes.append(actual - STATE_TRANSITION @ previous)
-    if not state_changes:
-        return None, None
-    process_covariance = np.cov(np.asarray(state_changes).T) + np.eye(4) * 1e-6
-    return process_covariance, np.eye(2) * 0.25
+    if len(state_changes) < 2:
+        raise ValueError("at least two state transitions are required")
+    process_covariance = np.cov(np.asarray(state_changes).T) + np.eye(4) * regularization
+    observation_covariance = np.eye(2) * observation_variance_km2
+    return process_covariance, observation_covariance
