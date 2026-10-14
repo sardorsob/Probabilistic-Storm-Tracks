@@ -47,6 +47,7 @@ Thumbs.db
 # Local agent planning context (never pushed)
 context/
 graphify-out/
+.serena/
 .worktrees/
 
 # Node build files
