@@ -1,6 +1,6 @@
 # Streamlit app
 
-The app is a read-only view of the schema-v1 dashboard contract. Forecasting and aggregation happen before Streamlit starts, which keeps page code small and prevents the UI from silently changing scientific results.
+The app is a read-only view of dashboard schema `1.0.0`. Forecasting and aggregation run before Streamlit starts, so the pages display exported results rather than recomputing model output.
 
 ## Run locally
 
@@ -29,6 +29,8 @@ streamlit run app/app.py
 
 Set `STORM_TRACKS_DASHBOARD_DATA_DIR` to load a contract from another directory.
 
+No current full-data contract is tracked in `app/data/`. A fresh clone therefore needs a generated contract, either at that path or at the directory named by the environment variable.
+
 ## Pages
 
 - **Overview** shows the headline split, case counts, and RMSE by horizon.
@@ -36,7 +38,7 @@ Set `STORM_TRACKS_DASHBOARD_DATA_DIR` to load a contract from another directory.
 - **Storm explorer** shows observed tracks and per-storm error when track tables are present.
 - **Methodology** explains the model and metric contract and links to the report.
 
-The app intentionally does not load `artifacts/historical_dashboard/`. Those tables use an older column layout and lack explicit split provenance.
+The app does not load `artifacts/historical_dashboard/`. Those legacy tables use a different schema and do not contain the provenance required by the current contract.
 
 ## Data failures
 

@@ -18,7 +18,7 @@ python -m pip install -e ".[notebooks,dev]"
 4. `04_kalman_filter.ipynb` estimates covariance and evaluates the Kalman filter.
 5. `05_evaluation_and_visualization.ipynb` compares split-aware results.
 
-The full IBTrACS preparation and forecast evaluation can take a long time. The notebooks were checked for structure and Python conversion during the refactor, but they were not executed on the complete dataset.
+The full IBTrACS preparation and forecast evaluation can take a long time. Repository tests validate notebook structure, compile their code cells, and ensure the model implementation remains in the package. They do not execute cells or establish a full-data result.
 
 ## Static verification
 

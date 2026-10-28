@@ -12,7 +12,7 @@ scripts/prepare_data.py ──► processed tracks
 scripts/run_models.py ──► split-aware persistence and Kalman results
     │
     ▼
-scripts/build_dashboard_data.py ──► schema-v1 tables and manifest
+scripts/build_dashboard_data.py ──► schema 1.0.0 tables and manifest
     │
     ▼
 app/data_loader.py ──► Streamlit pages
@@ -41,8 +41,8 @@ Model or metric behavior belongs in `src/storm_tracks/`. Scripts should translat
 | --- | --- | --- |
 | `data/` | Raw input, processed tracks, and current model outputs | Ignored |
 | `app/data/` | Current generated Streamlit contract | Generated; may be tracked for deployment |
-| `artifacts/historical_dashboard/` | Preserved pre-refactor tables with incomplete provenance | Tracked, historical only |
-| `artifacts/figures/` | Preserved analysis figures | Tracked |
+| `artifacts/historical_dashboard/` | Legacy tables with incomplete generation provenance | Tracked, historical only |
+| `artifacts/figures/` | Legacy analysis figures | Tracked |
 | `docs/reports/` | Reports and report source | Tracked |
 | `docs/references/` | Local reference papers | Tracked |
 
@@ -50,7 +50,7 @@ The app never falls back to the historical tables. It requires a `dashboard_mani
 
 ## Evaluation flow
 
-The configured seed determines a storm-level split. Covariances are estimated from training storms, while one named validation or test split is evaluated. Each model receives the same storms, forecast origins, and horizons. The dashboard builder rejects duplicate keys, unmatched model cases, invalid errors, unsupported horizons, and storms shared across splits.
+The configured seed determines a storm-level split. Process covariance is estimated from training storms, while one named validation or test split is evaluated. The observation covariance is a fixed measurement-noise floor because a single best-track position series cannot identify observation error independently. Each model receives the same storms, forecast origins, and horizons. The dashboard builder rejects duplicate keys, unmatched model cases, invalid errors, unsupported horizons, and storms shared across splits.
 
 ## Extending the project
 
